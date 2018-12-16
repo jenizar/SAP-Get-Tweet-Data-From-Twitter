@@ -1,0 +1,113 @@
+*&---------------------------------------------------------------------*
+*& Report ZGET_TWITTER_DATA_JOHN
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZGET_TWITTER_DATA_JOHN line-SIZE 1000.
+
+DATA: lo_http_client TYPE REF TO if_http_client,
+             lv_service TYPE string.
+
+TYPES: t_line TYPE c LENGTH 1000.
+
+DATA: l_string TYPE string,
+      lt_lines TYPE TABLE OF t_line.
+
+DATA : itabw TYPE TABLE OF t_line.
+
+TYPES : BEGIN OF ty_header,
+          tweet TYPE c LENGTH 1000,
+          text1 TYPE c LENGTH 255,
+        END OF ty_header.
+DATA: ls_header TYPE ty_header,
+      lt_header TYPE STANDARD TABLE OF ty_header,
+      lt_tweet TYPE STANDARD TABLE OF ty_header.
+
+FIELD-SYMBOLS: <l_line> TYPE t_line.
+
+DATA: lv_result TYPE String.
+*-------------------------------------------------------------------------------*
+***This service returns the count of the entityset
+
+DATA : lv_name TYPE C LENGTH 100,
+       lv_date1 TYPE C LENGTH 20,
+       lv_date2 TYPE C LENGTH 20.
+
+** Selection Screen
+SELECTION-SCREEN begin of block block1 with frame title text_001.
+SELECTION-SCREEN BEGIN OF LINE.
+SELECTION-SCREEN COMMENT (15) NAME1 FOR FIELD TNAME.
+PARAMETERS : TNAME TYPE C LENGTH 150 LOWER CASE OBLIGATORY.
+SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN BEGIN OF LINE.
+SELECTION-SCREEN COMMENT (15) DATE1 FOR FIELD SDATE.
+PARAMETERS : SDATE TYPE SY-DATUM OBLIGATORY.
+SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN BEGIN OF LINE.
+SELECTION-SCREEN COMMENT (15) DATE2 FOR FIELD EDATE.
+PARAMETERS : EDATE TYPE SY-DATUM OBLIGATORY.
+SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN end of block block1.
+
+AT SELECTION-SCREEN OUTPUT.
+    text_001 = 'Selection Parameter'.
+
+INITIALIZATION.
+  PERFORM SELECTION_SCREEN_TEXT.
+FORM SELECTION_SCREEN_TEXT.
+  NAME1 = 'Twitter account ID'.
+  DATE1 = 'Start Date'.
+  DATE2 = 'End Date'.
+ENDFORM.
+
+START-OF-SELECTION.
+lv_service = 'http://jenizar.pythonanywhere.com/twitter?'.
+CONCATENATE 'name=' TNAME INTO lv_name.
+CONCATENATE 'sdate=' SDATE(4) '-' SDATE+4(2) '-' SDATE+6(2) INTO lv_date1.
+CONCATENATE 'edate=' EDATE(4) '-' EDATE+4(2) '-' EDATE+6(2) INTO lv_date2.
+CONCATENATE lv_service lv_name '&' lv_date1 '&' lv_date2 INTO lv_service.
+
+*** Use CL_HTTP_CLIENT to consume the OData service using the method "create_by_url"
+
+CALL METHOD cl_http_client=>create_by_url(
+     EXPORTING
+       url                = lv_service
+     IMPORTING
+       client             = lo_http_client
+     EXCEPTIONS
+       argument_not_found = 1
+       plugin_not_active  = 2
+       internal_error     = 3
+       OTHERS             = 4 ).
+
+*** Call the following method to autheticate the user/password and client for the remote connection.
+CALL METHOD LO_HTTP_CLIENT->AUTHENTICATE(
+   EXPORTING
+     CLIENT = '100'
+     USERNAME = 'ABY_JENIZAR'
+     PASSWORD = 'bismillah'
+     LANGUAGE = ''
+     ).
+**** Send the request
+   lo_http_client->send(
+     EXCEPTIONS
+       http_communication_failure = 1
+       http_invalid_state         = 2 ).
+
+*** Receive the respose
+  lo_http_client->receive(
+     EXCEPTIONS
+       http_communication_failure = 1
+       http_invalid_state         = 2
+       http_processing_failed     = 3 ).
+
+*** Read the result
+  CLEAR lv_result .
+   lv_result = lo_http_client->response->get_cdata( ).
+
+condense lv_result NO-GAPS.
+SPLIT lv_result AT '<p>' INTO TABLE lt_header.
+
+LOOP AT lt_header INTO ls_header.
+  WRITE: / ls_header-tweet.
+ENDLOOP.
