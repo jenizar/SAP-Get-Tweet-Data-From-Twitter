@@ -84,8 +84,8 @@ CALL METHOD cl_http_client=>create_by_url(
 CALL METHOD LO_HTTP_CLIENT->AUTHENTICATE(
    EXPORTING
      CLIENT = '100'
-     USERNAME = 'ABY_JENIZAR'
-     PASSWORD = 'bismillah'
+     USERNAME = 'ABAPER'
+     PASSWORD = 'initial1'
      LANGUAGE = ''
      ).
 **** Send the request
