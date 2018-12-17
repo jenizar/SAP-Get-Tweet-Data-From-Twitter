@@ -11,9 +11,6 @@ Install library : flask, tweepy
 
 Web hosting : pythonanywhere.com
 
-Github:
-https://github.com/jenizar/SAP-Get-Tweet-Data-From-Twitter
-
 Youtube video:
 https://youtu.be/KcTtDZHl2d4
 
